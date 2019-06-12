@@ -24,6 +24,7 @@ public class Generalization {
 		toTextFile(outputFile);
 	}
 	
+	//Checks which log type is seleceted, and performs generalization.	
 	public void assignType(String logType) {
 		newlog = log;
 		if(logType.equalsIgnoreCase("ipv4")) {
@@ -35,24 +36,30 @@ public class Generalization {
 			newlog = generalize(10);
 		}
 		else if(logType.equalsIgnoreCase("netflow")) {
-			newlog = generalize(5);
 			newlog = generalize(6);
+			newlog = generalize(7);
 		}
 	}
 	
+	//Rounds a port number to nearest hundred if the port number is above 49151.
 	public ArrayList<List<String>> generalize(int portFieldNr) {
 		ArrayList<List<String>> newLog = new ArrayList<List<String>>();
 		for(List<String> pkt : newlog) {
-			if(Integer.parseInt(pkt.get(portFieldNr)) > 49151) {
-				List<String> newpkt = new ArrayList<String>();
-				for(int i = 0; i < portFieldNr;i++) {
-					newpkt.add(pkt.get(i));
+			if(!pkt.get(portFieldNr).contains(".")) {
+				if(Integer.parseInt(pkt.get(portFieldNr)) > 49151) {
+					List<String> newpkt = new ArrayList<String>();
+					for(int i = 0; i < portFieldNr;i++) {
+						newpkt.add(pkt.get(i));
+					}
+					newpkt.add(Integer.toString(Rounding(pkt.get(portFieldNr))));
+					for(int i = portFieldNr + 1; i < pkt.size(); i++) {
+						newpkt.add(pkt.get(i));
+					}
+					newLog.add(newpkt);
 				}
-				newpkt.add(Integer.toString(Rounding(pkt.get(portFieldNr))));
-				for(int i = portFieldNr + 1; i < pkt.size(); i++) {
-					newpkt.add(pkt.get(i));
+				else {
+					newLog.add(pkt);
 				}
-				newLog.add(newpkt);
 			}
 			else {
 				newLog.add(pkt);
@@ -61,11 +68,12 @@ public class Generalization {
 		return newLog;
 	}
 	
+	//Performs the actual rounding.
 	public int Rounding(String port) {
 		return (int)(Math.round(Integer.parseInt(port)/100.0) * 100);
 	}
 	
-	//Method to write lines from the feature selected pkts to file.
+	//Method to write lines from the new log to file.
 	public void toTextFile(String FNAME) {
 		ArrayList<String> format = new ArrayList<>();
 		for(List<String> pkt : newlog) {
@@ -79,7 +87,7 @@ public class Generalization {
 		try ( BufferedWriter bw = new BufferedWriter (new FileWriter (FNAME)) ) 
 		{
 			for (String line : format) {
-				bw.write(line);// + "\n");
+				bw.write(line);
 			}
 			System.out.println("Created file " + FNAME);
 			bw.close ();
@@ -91,9 +99,6 @@ public class Generalization {
 	
 	
 	public static void main(String[] args) throws FileNotFoundException {
-//		Generalization g = new Generalization("ipv4", 
-//				"C:\\Users\\Petter\\Documents\\Master\\Datasets\\IPv4\\A-IPv4.dat",
-//				"C:\\Users\\Petter\\Documents\\Master\\Datasets\\IPv4\\A2-IPv4.dat");
 		if (args.length !=3) {
 		      System.err.println("usage: java -jar jarfile.jar logtype originalInput.dat anonymizedInput.dat \n"
 		    		  + "The logtype must be either IPv4, IPv6 or Netflow");
